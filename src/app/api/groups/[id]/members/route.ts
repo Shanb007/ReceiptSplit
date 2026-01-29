@@ -6,7 +6,6 @@ import { z } from 'zod'
 
 const addMemberSchema = z.object({
   name: z.string().min(1).max(50),
-  isPayer: z.boolean().default(false),
 })
 
 export async function POST(
@@ -42,18 +41,9 @@ export async function POST(
       return NextResponse.json({ error: 'Group not found' }, { status: 404 })
     }
 
-    // If new member is payer, unset existing payer
-    if (parsed.data.isPayer) {
-      await prisma.member.updateMany({
-        where: { groupId },
-        data: { isPayer: false },
-      })
-    }
-
     const member = await prisma.member.create({
       data: {
         name: parsed.data.name,
-        isPayer: parsed.data.isPayer,
         groupId,
       },
     })

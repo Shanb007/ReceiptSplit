@@ -24,7 +24,6 @@ export interface Member {
   id: string
   name: string
   groupId: string
-  isPayer: boolean
   splitwiseUserId: string | null
   createdAt: Date
   updatedAt: Date
@@ -33,6 +32,7 @@ export interface Member {
 export interface Receipt {
   id: string
   groupId: string
+  payerId: string | null  // Member who paid for this receipt
   imageUrl: string | null
   merchantName: string | null
   receiptDate: Date | null

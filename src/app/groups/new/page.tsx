@@ -3,14 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
-import { ArrowLeft, Plus, X, Loader2, Users, Crown } from 'lucide-react'
+import { ArrowLeft, Plus, X, Loader2, Users, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function NewGroupPage() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [members, setMembers] = useState<string[]>(['', ''])
-  const [payerIndex, setPayerIndex] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,11 +21,6 @@ export default function NewGroupPage() {
     if (members.length <= 2) return
     const newMembers = members.filter((_, i) => i !== index)
     setMembers(newMembers)
-    if (payerIndex >= newMembers.length) {
-      setPayerIndex(0)
-    } else if (payerIndex > index) {
-      setPayerIndex(payerIndex - 1)
-    }
   }
 
   const updateMember = (index: number, value: string) => {
@@ -57,9 +51,8 @@ export default function NewGroupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
-          members: validMembers.map((m, i) => ({
+          members: validMembers.map((m) => ({
             name: m.trim(),
-            isPayer: i === payerIndex,
           })),
         }),
       })
@@ -126,15 +119,13 @@ export default function NewGroupPage() {
 
             {/* Members */}
             <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-primary)]">
-                    Members
-                  </label>
-                  <p className="text-sm text-[var(--text-muted)] mt-0.5">
-                    Click the crown to mark who paid
-                  </p>
-                </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-[var(--text-primary)]">
+                  Members
+                </label>
+                <p className="text-sm text-[var(--text-muted)] mt-0.5">
+                  Add everyone who will split bills in this group
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -144,18 +135,9 @@ export default function NewGroupPage() {
                     className="flex items-center gap-3 animate-fade-in-up"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setPayerIndex(index)}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                        payerIndex === index
-                          ? 'bg-gradient-to-br from-[var(--accent)] to-[#f0c030] text-[#7a5a00] shadow-lg shadow-[var(--accent)]/30'
-                          : 'bg-[var(--surface-hover)] text-[var(--text-muted)] hover:bg-[var(--border)]'
-                      }`}
-                      title={payerIndex === index ? 'This person paid' : 'Click to mark as payer'}
-                    >
-                      <Crown className="h-5 w-5" />
-                    </button>
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                      {member.trim() ? member.trim().charAt(0).toUpperCase() : (index + 1)}
+                    </div>
                     <input
                       type="text"
                       value={member}
@@ -200,7 +182,7 @@ export default function NewGroupPage() {
               ) : (
                 <>
                   Create Group
-                  <ArrowLeft className="h-5 w-5 rotate-180" />
+                  <ArrowRight className="h-5 w-5" />
                 </>
               )}
             </button>

@@ -9,7 +9,6 @@ const createGroupSchema = z.object({
   members: z.array(
     z.object({
       name: z.string().min(1).max(50),
-      isPayer: z.boolean().default(false),
     })
   ).min(1),
 })
@@ -40,7 +39,6 @@ export async function POST(request: NextRequest) {
         members: {
           create: members.map((m) => ({
             name: m.name,
-            isPayer: m.isPayer,
           })),
         },
       },

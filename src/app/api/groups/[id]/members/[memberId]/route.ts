@@ -6,7 +6,6 @@ import { z } from 'zod'
 
 const updateMemberSchema = z.object({
   name: z.string().min(1).max(50).optional(),
-  isPayer: z.boolean().optional(),
 })
 
 export async function PUT(
@@ -40,14 +39,6 @@ export async function PUT(
 
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 })
-    }
-
-    // If setting as payer, unset existing payer first
-    if (parsed.data.isPayer) {
-      await prisma.member.updateMany({
-        where: { groupId },
-        data: { isPayer: false },
-      })
     }
 
     const member = await prisma.member.update({
@@ -108,17 +99,6 @@ export async function DELETE(
     await prisma.member.delete({
       where: { id: memberId },
     })
-
-    // If deleted member was payer, assign payer to first remaining member
-    if (memberToDelete.isPayer) {
-      const firstMember = group.members.find((m: { id: string }) => m.id !== memberId)
-      if (firstMember) {
-        await prisma.member.update({
-          where: { id: firstMember.id },
-          data: { isPayer: true },
-        })
-      }
-    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

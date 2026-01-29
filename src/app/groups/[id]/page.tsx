@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/header'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Plus, Users, Receipt, Calendar, DollarSign, ChevronRight, Crown, Camera } from 'lucide-react'
+import { ArrowLeft, Plus, Users, Receipt, Calendar, DollarSign, ChevronRight, Camera } from 'lucide-react'
 import type { Member, Receipt as ReceiptModel } from '@/types'
 
 function formatCents(cents: number | null): string {
@@ -58,8 +58,6 @@ export default async function GroupPage({
     notFound()
   }
 
-  const payer = group.members.find((m: Member) => m.isPayer)
-
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
       <Header />
@@ -75,49 +73,33 @@ export default async function GroupPage({
 
         {/* Group Header Card */}
         <div className="card p-8 mb-8 animate-fade-in-up">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 flex items-center justify-center">
-                <Users className="h-8 w-8 text-[var(--primary)]" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{group.name}</h1>
-                <p className="text-[var(--text-secondary)] text-sm">
-                  Created {formatDate(group.createdAt)}
-                </p>
-              </div>
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 flex items-center justify-center">
+              <Users className="h-8 w-8 text-[var(--primary)]" />
             </div>
-
-            {payer && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--accent)]/20 to-[var(--accent)]/10">
-                <Crown className="h-4 w-4 text-[#b8860b]" />
-                <span className="text-sm font-medium text-[#7a5a00]">{payer.name} paid</span>
-              </div>
-            )}
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{group.name}</h1>
+              <p className="text-[var(--text-secondary)] text-sm">
+                Created {formatDate(group.createdAt)}
+              </p>
+            </div>
           </div>
 
           {/* Members */}
           <div className="mt-8">
-            <h3 className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider mb-4">Members</h3>
+            <h3 className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider mb-4">
+              {group.members.length} {group.members.length === 1 ? 'Member' : 'Members'}
+            </h3>
             <div className="flex flex-wrap gap-2">
               {group.members.map((member: Member) => (
                 <div
                   key={member.id}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    member.isPayer
-                      ? 'bg-gradient-to-r from-[var(--accent)]/30 to-[var(--accent)]/20 text-[#7a5a00]'
-                      : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
-                  }`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--surface-hover)] text-[var(--text-secondary)]"
                 >
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-                    member.isPayer
-                      ? 'bg-[var(--accent)] text-[#7a5a00]'
-                      : 'bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] text-white'
-                  }`}>
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white text-xs font-semibold">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
                   {member.name}
-                  {member.isPayer && <Crown className="h-3.5 w-3.5" />}
                 </div>
               ))}
             </div>
@@ -191,7 +173,7 @@ export default async function GroupPage({
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-1 transition-all" />
+                  <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
                 </Link>
               )
             })}
