@@ -4,7 +4,7 @@ import { Header } from '@/components/header'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Plus, Users, Receipt, Calendar, DollarSign, ChevronRight, Camera } from 'lucide-react'
-import type { Member, Receipt as ReceiptModel } from '@/types'
+import type { Member } from '@/types'
 
 function formatCents(cents: number | null): string {
   if (cents === null) return '-'
@@ -136,7 +136,7 @@ export default async function GroupPage({
           </div>
         ) : (
           <div className="space-y-3 stagger-children">
-            {group.receipts.map((receipt: ReceiptModel) => {
+            {group.receipts.map((receipt) => {
               const statusConfig = getStatusConfig(receipt.status)
               return (
                 <Link
