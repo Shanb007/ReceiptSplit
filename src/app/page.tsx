@@ -33,96 +33,96 @@ export default async function Home() {
 
       {/* Hero */}
       <main className="flex-1 relative">
-        <section className="container mx-auto px-6 pt-20 pb-32 text-center">
+        <section className="container mx-auto px-6 pt-12 pb-16 text-center">
           <div className="animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 badge badge-primary mb-6">
-              <Sparkles className="h-3.5 w-3.5" />
+            <div className="inline-flex items-center gap-1.5 badge badge-primary mb-4">
+              <Sparkles className="h-3 w-3" />
               AI-Powered Bill Splitting
             </div>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-[var(--text-primary)] mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[var(--text-primary)] mb-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             Split bills with
             <br />
             <span className="gradient-text">zero hassle</span>
           </h1>
 
-          <p className="text-xl text-[var(--text-secondary)] mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Snap a receipt, let AI extract every item, then assign who had what.
-            Fair splits calculated instantly, down to the penny.
+          <p className="text-lg text-[var(--text-secondary)] mb-8 max-w-xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            Snap a receipt, let AI extract every item, assign who had what.
+            Fair splits calculated instantly.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <Link href="/login" className="btn btn-primary text-lg px-8 py-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            <Link href="/login" className="btn btn-primary px-6 py-3">
               Start Splitting Free
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <a href="#how-it-works" className="btn btn-secondary text-lg px-8 py-4">
+            <a href="#how-it-works" className="btn btn-secondary px-6 py-3">
               See How It Works
             </a>
           </div>
 
           {/* Stats */}
-          <div className="flex flex-wrap justify-center gap-12 mt-20 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className="flex flex-wrap justify-center gap-10 mt-12 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <div className="text-center">
-              <div className="text-4xl font-bold text-[var(--text-primary)]">10s</div>
-              <div className="text-[var(--text-muted)] text-sm mt-1">Average scan time</div>
+              <div className="text-3xl font-bold text-[var(--text-primary)]">10s</div>
+              <div className="text-[var(--text-muted)] text-xs mt-0.5">Average scan time</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-[var(--text-primary)]">100%</div>
-              <div className="text-[var(--text-muted)] text-sm mt-1">Accurate splits</div>
+              <div className="text-3xl font-bold text-[var(--text-primary)]">100%</div>
+              <div className="text-[var(--text-muted)] text-xs mt-0.5">Accurate splits</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-[var(--text-primary)]">Free</div>
-              <div className="text-[var(--text-muted)] text-sm mt-1">To get started</div>
+              <div className="text-3xl font-bold text-[var(--text-primary)]">Free</div>
+              <div className="text-[var(--text-muted)] text-xs mt-0.5">To get started</div>
             </div>
           </div>
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="py-24 relative">
+        <section id="how-it-works" className="py-14 relative scroll-mt-16">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--surface)] to-transparent" />
           <div className="container mx-auto px-6 relative">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
                 Three steps to fair splits
               </h2>
-              <p className="text-[var(--text-secondary)] text-lg">
+              <p className="text-[var(--text-secondary)]">
                 No more awkward calculations or arguments
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto stagger-children">
-              <div className="card card-interactive p-8 text-center group">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#ff6b35]/10 to-[#ff6b35]/5 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Camera className="h-8 w-8 text-[var(--primary)]" />
+            <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto stagger-children">
+              <div className="card card-interactive p-6 text-center group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff6b35]/10 to-[#ff6b35]/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Camera className="h-6 w-6 text-[var(--primary)]" />
                 </div>
-                <div className="badge badge-muted mb-4">Step 1</div>
-                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-3">Snap your receipt</h3>
-                <p className="text-[var(--text-secondary)] leading-relaxed">
-                  Take a photo or upload an image. Our AI handles messy receipts, faded text, and weird formats.
+                <div className="badge badge-muted mb-3 text-[10px]">Step 1</div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Snap your receipt</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                  Take a photo or upload an image. Our AI handles messy receipts and weird formats.
                 </p>
               </div>
 
-              <div className="card card-interactive p-8 text-center group">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4ecdc4]/10 to-[#4ecdc4]/5 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Users className="h-8 w-8 text-[var(--secondary)]" />
+              <div className="card card-interactive p-6 text-center group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4ecdc4]/10 to-[#4ecdc4]/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Users className="h-6 w-6 text-[var(--secondary)]" />
                 </div>
-                <div className="badge badge-muted mb-4">Step 2</div>
-                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-3">Assign items</h3>
-                <p className="text-[var(--text-secondary)] leading-relaxed">
-                  Tap to assign each item to whoever ordered it. Shared that appetizer? Split it between people.
+                <div className="badge badge-muted mb-3 text-[10px]">Step 2</div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Assign items</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                  Tap to assign each item to whoever ordered it. Shared appetizers? Split them.
                 </p>
               </div>
 
-              <div className="card card-interactive p-8 text-center group">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#ffe66d]/20 to-[#ffe66d]/5 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Calculator className="h-8 w-8 text-[#d4a012]" />
+              <div className="card card-interactive p-6 text-center group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ffe66d]/20 to-[#ffe66d]/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Calculator className="h-6 w-6 text-[#d4a012]" />
                 </div>
-                <div className="badge badge-muted mb-4">Step 3</div>
-                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-3">Get fair totals</h3>
-                <p className="text-[var(--text-secondary)] leading-relaxed">
-                  Tax and tip split proportionally. Everyone sees exactly what they owe. Export to Splitwise.
+                <div className="badge badge-muted mb-3 text-[10px]">Step 3</div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Get fair totals</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                  Tax and tip split proportionally. Export to Splitwise with one click.
                 </p>
               </div>
             </div>
@@ -130,65 +130,65 @@ export default async function Home() {
         </section>
 
         {/* Features */}
-        <section className="py-24">
+        <section className="py-14">
           <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-2 gap-16 items-center max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-10 items-center max-w-4xl mx-auto">
               <div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-6">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-5">
                   Built for real-world receipts
                 </h2>
-                <div className="space-y-6">
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center flex-shrink-0">
-                      <Zap className="h-5 w-5 text-[var(--primary)]" />
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center flex-shrink-0">
+                      <Zap className="h-4 w-4 text-[var(--primary)]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[var(--text-primary)] mb-1">Smart extraction</h3>
-                      <p className="text-[var(--text-secondary)]">AI reads even blurry photos, handwritten notes, and unusual receipt formats.</p>
+                      <h3 className="font-semibold text-[var(--text-primary)] text-sm mb-0.5">Smart extraction</h3>
+                      <p className="text-[var(--text-secondary)] text-sm">AI reads blurry photos, handwritten notes, and unusual formats.</p>
                     </div>
                   </div>
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--secondary)]/10 flex items-center justify-center flex-shrink-0">
-                      <Shield className="h-5 w-5 text-[var(--secondary)]" />
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[var(--secondary)]/10 flex items-center justify-center flex-shrink-0">
+                      <Shield className="h-4 w-4 text-[var(--secondary)]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[var(--text-primary)] mb-1">You stay in control</h3>
-                      <p className="text-[var(--text-secondary)]">Review and edit any extraction. Nothing gets split until you confirm it's right.</p>
+                      <h3 className="font-semibold text-[var(--text-primary)] text-sm mb-0.5">You stay in control</h3>
+                      <p className="text-[var(--text-secondary)] text-sm">Review and edit any extraction. Nothing splits until you confirm.</p>
                     </div>
                   </div>
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-[#ffe66d]/20 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="h-5 w-5 text-[#d4a012]" />
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[#ffe66d]/20 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="h-4 w-4 text-[#d4a012]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[var(--text-primary)] mb-1">Penny-perfect math</h3>
-                      <p className="text-[var(--text-secondary)]">Deterministic rounding ensures totals always match. No missing cents.</p>
+                      <h3 className="font-semibold text-[var(--text-primary)] text-sm mb-0.5">Penny-perfect math</h3>
+                      <p className="text-[var(--text-secondary)] text-sm">Deterministic rounding ensures totals always match.</p>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="relative">
-                <div className="card p-6 rotate-3 hover:rotate-0 transition-transform duration-500">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-[var(--border)]">
-                      <span className="text-[var(--text-primary)]">Margherita Pizza</span>
-                      <span className="font-semibold">$18.00</span>
+                <div className="card p-5 rotate-2 hover:rotate-0 transition-transform duration-500">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center py-1.5 border-b border-[var(--border)]">
+                      <span className="text-[var(--text-primary)] text-sm">Margherita Pizza</span>
+                      <span className="font-semibold text-sm">$18.00</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-[var(--border)]">
-                      <span className="text-[var(--text-primary)]">Caesar Salad</span>
-                      <span className="font-semibold">$12.00</span>
+                    <div className="flex justify-between items-center py-1.5 border-b border-[var(--border)]">
+                      <span className="text-[var(--text-primary)] text-sm">Caesar Salad</span>
+                      <span className="font-semibold text-sm">$12.00</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-[var(--border)]">
-                      <span className="text-[var(--text-primary)]">2x Lemonade</span>
-                      <span className="font-semibold">$8.00</span>
+                    <div className="flex justify-between items-center py-1.5 border-b border-[var(--border)]">
+                      <span className="text-[var(--text-primary)] text-sm">2x Lemonade</span>
+                      <span className="font-semibold text-sm">$8.00</span>
                     </div>
-                    <div className="flex justify-between items-center pt-3">
-                      <span className="font-semibold text-[var(--text-primary)]">Total</span>
-                      <span className="font-bold text-lg text-[var(--primary)]">$38.00</span>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="font-semibold text-[var(--text-primary)] text-sm">Total</span>
+                      <span className="font-bold text-[var(--primary)]">$38.00</span>
                     </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-4 -right-4 badge badge-success py-2 px-4 shadow-lg">
+                <div className="absolute -bottom-3 -right-3 badge badge-success py-1.5 px-3 text-xs shadow-lg">
                   Extracted in 3s
                 </div>
               </div>
@@ -197,18 +197,18 @@ export default async function Home() {
         </section>
 
         {/* CTA */}
-        <section className="py-24">
+        <section className="py-14">
           <div className="container mx-auto px-6">
-            <div className="card gradient-bg p-12 text-center text-white max-w-3xl mx-auto relative overflow-hidden">
+            <div className="card gradient-bg p-8 text-center text-white max-w-2xl mx-auto relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
               <div className="relative">
-                <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to split smarter?</h2>
-                <p className="text-white/80 text-lg mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-2">Ready to split smarter?</h2>
+                <p className="text-white/80 mb-5">
                   Join thousands who've ditched the calculator app
                 </p>
-                <Link href="/login" className="btn bg-white text-[var(--primary)] hover:bg-white/90 text-lg px-8 py-4 shadow-xl">
+                <Link href="/login" className="btn bg-white text-[var(--primary)] hover:bg-white/90 px-6 py-3 shadow-xl">
                   Get Started Free
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -217,10 +217,10 @@ export default async function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--border)] py-8">
+      <footer className="border-t border-[var(--border)] py-5">
         <div className="container mx-auto px-6 text-center">
-          <div className="flex items-center justify-center gap-2 text-[var(--text-muted)] text-sm">
-            <Receipt className="h-4 w-4" />
+          <div className="flex items-center justify-center gap-1.5 text-[var(--text-muted)] text-xs">
+            <Receipt className="h-3.5 w-3.5" />
             <span>ReceiptSplit — Split bills the fair way</span>
           </div>
         </div>
