@@ -11,7 +11,27 @@ interface ImageUploaderProps {
 }
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp']
+const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp']
+// HEIC/HEIF can't be rendered by most browsers (only Safari). Show a placeholder instead.
+const NON_PREVIEWABLE_TYPES = ['image/heic', 'image/heif']
+const NON_PREVIEWABLE_EXTENSIONS = ['.heic', '.heif']
 const MAX_SIZE_MB = 10
+
+function getFileExtension(name: string): string {
+  return name.slice(name.lastIndexOf('.')).toLowerCase()
+}
+
+function isAcceptedFile(file: File): boolean {
+  if (ACCEPTED_TYPES.includes(file.type)) return true
+  // Fallback: some browsers report HEIC as "" or "application/octet-stream"
+  return ACCEPTED_EXTENSIONS.includes(getFileExtension(file.name))
+}
+
+function canPreviewInBrowser(file: File): boolean {
+  if (NON_PREVIEWABLE_TYPES.includes(file.type)) return false
+  if (NON_PREVIEWABLE_EXTENSIONS.includes(getFileExtension(file.name))) return false
+  return true
+}
 
 export function ImageUploader({
   onImageSelected,
@@ -28,7 +48,7 @@ export function ImageUploader({
     (file: File) => {
       setError('')
 
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      if (!isAcceptedFile(file)) {
         setError('Please upload a JPG, PNG, or HEIC image')
         return
       }
@@ -38,11 +58,16 @@ export function ImageUploader({
         return
       }
 
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setPreview(e.target?.result as string)
+      if (canPreviewInBrowser(file)) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setPreview(e.target?.result as string)
+        }
+        reader.readAsDataURL(file)
+      } else {
+        // For HEIC/HEIF, set a marker so we show the placeholder
+        setPreview('no-preview')
       }
-      reader.readAsDataURL(file)
 
       onImageSelected(file)
     },
@@ -83,16 +108,32 @@ export function ImageUploader({
   }
 
   if (selectedFile && preview) {
+    const showImage = preview !== 'no-preview'
+
     return (
       <div className="relative animate-scale-in">
         <div className="card p-3">
           <div className="relative rounded-xl overflow-hidden bg-[var(--surface-hover)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={preview}
-              alt="Receipt preview"
-              className="w-full max-h-80 object-contain"
-            />
+            {showImage ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={preview}
+                alt="Receipt preview"
+                className="w-full max-h-80 object-contain"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 flex items-center justify-center">
+                  <ImageIcon className="h-8 w-8 text-[var(--primary)]" />
+                </div>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  HEIC preview not supported in browser
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  The image will still be processed correctly
+                </p>
+              </div>
+            )}
             {!disabled && (
               <button
                 type="button"
