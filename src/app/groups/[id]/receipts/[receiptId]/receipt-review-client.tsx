@@ -8,6 +8,7 @@ import {
   User,
   Store,
   Image as ImageIcon,
+  Users,
 } from 'lucide-react'
 import { ItemRow, type LineItemData } from '@/components/item-row'
 import { AddItemForm } from '@/components/add-item-form'
@@ -181,17 +182,26 @@ export function ReceiptReviewClient({ receipt: initialReceipt }: { receipt: Rece
         onTotalsUpdated={handleTotalsUpdated}
       />
 
-      {/* Next step hint */}
+      {/* Next step */}
       <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
         <p className="text-sm text-[var(--text-muted)] mb-3">
           Once items look correct, proceed to split among members
         </p>
-        <Link
-          href={`/groups/${receipt.groupId}`}
-          className="btn btn-secondary"
-        >
-          Back to Group
-        </Link>
+        <div className="flex items-center justify-center gap-3">
+          <Link
+            href={`/groups/${receipt.group.id}`}
+            className="btn btn-secondary"
+          >
+            Back to Group
+          </Link>
+          <Link
+            href={`/groups/${receipt.group.id}/receipts/${receipt.id}/split`}
+            className="btn btn-primary"
+          >
+            <Users className="h-4 w-4" />
+            Proceed to Split
+          </Link>
+        </div>
       </div>
     </>
   )
