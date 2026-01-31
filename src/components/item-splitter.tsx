@@ -12,8 +12,10 @@ interface ItemSplitterProps {
     lineTotal: number
   }
   members: { id: string; name: string }[]
-  assignedMemberIds: Set<string>
+  /** Map of memberId → share weight (e.g. 2 means "2 parts") */
+  memberShares: Map<string, number>
   onToggleMember: (itemId: string, memberId: string) => void
+  onShareChange: (itemId: string, memberId: string, share: number) => void
   onSelectAll: (itemId: string) => void
 }
 
@@ -24,13 +26,18 @@ function formatCents(cents: number): string {
 export function ItemSplitter({
   item,
   members,
-  assignedMemberIds,
+  memberShares,
   onToggleMember,
+  onShareChange,
   onSelectAll,
 }: ItemSplitterProps) {
-  const assignedCount = assignedMemberIds.size
-  const allSelected = members.length > 0 && members.every((m) => assignedMemberIds.has(m.id))
-  const perPerson = assignedCount > 0 ? Math.floor(item.lineTotal / assignedCount) : 0
+  const assignedMembers = members.filter((m) => memberShares.has(m.id))
+  const assignedCount = assignedMembers.length
+  const allSelected = members.length > 0 && members.every((m) => memberShares.has(m.id))
+  const totalShares = Array.from(memberShares.values()).reduce((s, v) => s + v, 0)
+
+  // Check if any share is non-1 (custom ratio mode)
+  const hasCustomRatios = Array.from(memberShares.values()).some((v) => v !== 1)
 
   return (
     <div className="px-4 py-4 border-b border-[var(--border)] last:border-b-0">
@@ -57,7 +64,7 @@ export function ItemSplitter({
           <MemberChip
             key={member.id}
             member={member}
-            selected={assignedMemberIds.has(member.id)}
+            selected={memberShares.has(member.id)}
             onClick={() => onToggleMember(item.id, member.id)}
           />
         ))}
@@ -76,12 +83,65 @@ export function ItemSplitter({
         </button>
       </div>
 
+      {/* Custom ratio editor — shown when 2+ members assigned */}
+      {assignedCount >= 2 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-[var(--surface-hover)]/60">
+          <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide mr-1">
+            Ratio
+          </span>
+          {assignedMembers.map((member, idx) => {
+            const share = memberShares.get(member.id) || 1
+            return (
+              <div key={member.id} className="flex items-center gap-1">
+                {idx > 0 && (
+                  <span className="text-[var(--text-muted)] text-xs font-medium mx-0.5">:</span>
+                )}
+                <span className="text-xs text-[var(--text-secondary)]">{member.name}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={share}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    if (val >= 1 && val <= 99) {
+                      onShareChange(item.id, member.id, val)
+                    }
+                  }}
+                  className="w-10 h-6 text-center text-xs font-semibold rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/30 tabular-nums"
+                />
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* Per-person breakdown */}
       {assignedCount > 0 ? (
-        <p className="text-xs text-[var(--text-muted)] mt-2">
-          ${formatCents(perPerson)} per person
-          {assignedCount > 1 && ` (${assignedCount} people)`}
-        </p>
+        <div className="mt-2">
+          {assignedCount === 1 ? (
+            <p className="text-xs text-[var(--text-muted)]">
+              ${formatCents(item.lineTotal)} to {assignedMembers[0].name}
+            </p>
+          ) : hasCustomRatios ? (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+              {assignedMembers.map((member) => {
+                const share = memberShares.get(member.id) || 1
+                const amount = Math.floor((item.lineTotal * share) / totalShares)
+                return (
+                  <span key={member.id} className="text-xs text-[var(--text-muted)]">
+                    {member.name}: ${formatCents(amount)}
+                  </span>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--text-muted)]">
+              ${formatCents(Math.floor(item.lineTotal / assignedCount))} per person
+              {` (${assignedCount} people)`}
+            </p>
+          )}
+        </div>
       ) : (
         <p className="text-xs text-[var(--warning)] mt-2">
           Assign to at least one person
