@@ -46,7 +46,7 @@ export default async function SplitPage({
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
       <Header />
 
-      <main className="flex-1 container mx-auto px-6 py-8 max-w-2xl">
+      <main className="flex-1 container mx-auto px-6 py-8 max-w-6xl">
         <Link
           href={`/groups/${id}/receipts/${receiptId}`}
           className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-8 group"
