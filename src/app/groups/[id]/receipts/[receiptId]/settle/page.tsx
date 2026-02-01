@@ -24,7 +24,14 @@ export default async function SettlePage({
       payer: true,
       group: {
         include: {
-          members: { orderBy: { createdAt: 'asc' } },
+          members: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              splitwiseUserId: true,
+            },
+          },
         },
       },
     },
@@ -39,6 +46,12 @@ export default async function SettlePage({
     include: {
       member: { select: { id: true, name: true } },
     },
+  })
+
+  // Check if user has Splitwise connected
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { splitwiseToken: true },
   })
 
   return (
@@ -57,6 +70,7 @@ export default async function SettlePage({
         <SettleClient
           receipt={JSON.parse(JSON.stringify(receipt))}
           initialSettlements={JSON.parse(JSON.stringify(settlements))}
+          splitwiseConnected={!!user?.splitwiseToken}
         />
       </main>
     </div>

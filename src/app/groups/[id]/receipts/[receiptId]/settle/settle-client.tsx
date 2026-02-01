@@ -12,9 +12,12 @@ import {
   CheckCircle,
   RefreshCw,
   AlertTriangle,
+  ExternalLink,
+  Settings,
 } from 'lucide-react'
 import { PersonBreakdown } from '@/components/person-breakdown'
 import { SettlementSummary } from '@/components/settlement-summary'
+import { SplitwiseMemberMapper } from '@/components/splitwise-member-mapper'
 
 function formatCents(cents: number): string {
   return (cents / 100).toFixed(2)
@@ -39,6 +42,12 @@ interface SettlementData {
   member: { id: string; name: string }
 }
 
+interface MemberData {
+  id: string
+  name: string
+  splitwiseUserId: string | null
+}
+
 interface ReceiptData {
   id: string
   groupId: string
@@ -54,21 +63,31 @@ interface ReceiptData {
   group: {
     id: string
     name: string
-    members: { id: string; name: string }[]
+    members: MemberData[]
   }
 }
 
 export function SettleClient({
   receipt: initialReceipt,
   initialSettlements,
+  splitwiseConnected,
 }: {
   receipt: ReceiptData
   initialSettlements: SettlementData[]
+  splitwiseConnected: boolean
 }) {
   const [receipt, setReceipt] = useState(initialReceipt)
   const [settlements, setSettlements] = useState(initialSettlements)
   const [isComputing, setIsComputing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState('')
+  const [showMapper, setShowMapper] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(
+    initialReceipt.status === 'EXPORTED',
+  )
+  const [membersState, setMembersState] = useState<MemberData[]>(
+    initialReceipt.group.members,
+  )
 
   const hasSettlements = settlements.length > 0
   const grandTotal = settlements.reduce((sum, s) => sum + s.finalAmount, 0)
@@ -87,11 +106,79 @@ export function SettleClient({
       const data = await res.json()
       setSettlements(data.settlements)
       setReceipt((prev) => ({ ...prev, status: 'SETTLED' }))
+      setExportSuccess(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to compute')
     } finally {
       setIsComputing(false)
     }
+  }
+
+  const handleExport = async () => {
+    setError('')
+
+    // Pre-check: Splitwise connected?
+    if (!splitwiseConnected) {
+      setError(
+        'Splitwise is not connected. Please connect in Settings first.',
+      )
+      return
+    }
+
+    // Pre-check: all settlement members mapped?
+    const settlementMemberIds = settlements.map((s) => s.memberId)
+    const unmapped = membersState
+      .filter(
+        (m) =>
+          settlementMemberIds.includes(m.id) && !m.splitwiseUserId,
+      )
+      .map((m) => m.name)
+
+    if (unmapped.length > 0) {
+      setShowMapper(true)
+      return
+    }
+
+    // Export
+    setIsExporting(true)
+    try {
+      const res = await fetch(
+        `/api/receipts/${receipt.id}/export/splitwise`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Export failed')
+      }
+      setExportSuccess(true)
+      setReceipt((prev) => ({ ...prev, status: 'EXPORTED' }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleMappingComplete = (
+    updated: { memberId: string; memberName: string; splitwiseUserId: string | null }[],
+  ) => {
+    setMembersState((prev) =>
+      prev.map((m) => {
+        const u = updated.find((u) => u.memberId === m.id)
+        return u ? { ...m, splitwiseUserId: u.splitwiseUserId } : m
+      }),
+    )
+    setShowMapper(false)
+  }
+
+  const statusBadge = () => {
+    if (exportSuccess || receipt.status === 'EXPORTED') {
+      return <span className="badge badge-primary">EXPORTED</span>
+    }
+    if (hasSettlements) {
+      return <span className="badge badge-success">SETTLED</span>
+    }
+    return <span className="badge badge-warning">SPLITTING</span>
   }
 
   return (
@@ -136,13 +223,7 @@ export function SettleClient({
               )}
             </div>
           </div>
-          <span
-            className={`badge ${
-              hasSettlements ? 'badge-success' : 'badge-warning'
-            }`}
-          >
-            {hasSettlements ? 'SETTLED' : 'SPLITTING'}
-          </span>
+          {statusBadge()}
         </div>
       </div>
 
@@ -150,13 +231,25 @@ export function SettleClient({
       {error && (
         <div className="flex items-center gap-2 text-sm text-[var(--error)] mb-4 p-3 rounded-lg bg-[var(--error)]/5 animate-fade-in-up">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          {error}
+          <span className="flex-1">{error}</span>
+          {error.includes('Settings') && (
+            <Link
+              href="/settings"
+              className="text-[var(--primary)] hover:underline flex-shrink-0 flex items-center gap-1"
+            >
+              <Settings className="h-3 w-3" />
+              Settings
+            </Link>
+          )}
         </div>
       )}
 
       {/* No settlements — show compute button */}
       {!hasSettlements && (
-        <div className="card p-8 text-center animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+        <div
+          className="card p-8 text-center animate-fade-in-up"
+          style={{ animationDelay: '0.1s' }}
+        >
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 flex items-center justify-center mx-auto mb-4">
             <Calculator className="h-8 w-8 text-[var(--primary)]" />
           </div>
@@ -164,7 +257,8 @@ export function SettleClient({
             Ready to Settle
           </h2>
           <p className="text-sm text-[var(--text-muted)] mb-6 max-w-md mx-auto">
-            Compute each person&apos;s share based on item assignments, tax, and tip allocations.
+            Compute each person&apos;s share based on item assignments, tax,
+            and tip allocations.
           </p>
           <button
             type="button"
@@ -186,7 +280,10 @@ export function SettleClient({
       {hasSettlements && (
         <>
           {/* Per-Person Breakdown */}
-          <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div
+            className="mb-6 animate-fade-in-up"
+            style={{ animationDelay: '0.1s' }}
+          >
             <h2 className="font-semibold text-[var(--text-primary)] mb-3">
               Per-Person Breakdown
             </h2>
@@ -218,7 +315,10 @@ export function SettleClient({
           </div>
 
           {/* Settlement Summary (who owes whom) */}
-          <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div
+            className="mb-6 animate-fade-in-up"
+            style={{ animationDelay: '0.2s' }}
+          >
             <SettlementSummary
               settlements={settlements.map((s) => ({
                 memberId: s.memberId,
@@ -248,6 +348,29 @@ export function SettleClient({
               )}
               {isComputing ? 'Re-computing...' : 'Re-compute Settlement'}
             </button>
+
+            {/* Export to Splitwise */}
+            {exportSuccess ? (
+              <span className="btn btn-secondary cursor-default">
+                <CheckCircle className="h-4 w-4 text-[var(--success)]" />
+                Exported to Splitwise
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isExporting}
+                className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+                {isExporting ? 'Exporting...' : 'Export to Splitwise'}
+              </button>
+            )}
+
             <Link
               href={`/groups/${receipt.group.id}`}
               className="btn btn-primary"
@@ -258,6 +381,19 @@ export function SettleClient({
           </div>
         </>
       )}
+
+      {/* Splitwise Member Mapper Modal */}
+      <SplitwiseMemberMapper
+        open={showMapper}
+        groupId={receipt.group.id}
+        members={membersState.map((m) => ({
+          memberId: m.id,
+          memberName: m.name,
+          splitwiseUserId: m.splitwiseUserId,
+        }))}
+        onClose={() => setShowMapper(false)}
+        onMappingComplete={handleMappingComplete}
+      />
     </>
   )
 }
