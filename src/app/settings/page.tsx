@@ -14,6 +14,9 @@ export default async function SettingsPage() {
     select: {
       splitwiseToken: true,
       splitwiseUserId: true,
+      openaiApiKey: true,
+      scanCount: true,
+      scanResetDate: true,
     },
   })
 
@@ -30,6 +33,20 @@ export default async function SettingsPage() {
     } catch {
       // Token expired or revoked — treat as disconnected
       splitwiseConnected = false
+    }
+  }
+
+  // Compute scan usage
+  const hasApiKey = !!user?.openaiApiKey
+  let scansUsed = user?.scanCount ?? 0
+  if (user?.scanResetDate) {
+    const now = new Date()
+    const resetDate = new Date(user.scanResetDate)
+    if (
+      resetDate.getMonth() !== now.getMonth() ||
+      resetDate.getFullYear() !== now.getFullYear()
+    ) {
+      scansUsed = 0
     }
   }
 
@@ -54,6 +71,9 @@ export default async function SettingsPage() {
           splitwiseConnected={splitwiseConnected}
           splitwiseUserName={splitwiseUserName}
           splitwiseEmail={splitwiseEmail}
+          hasApiKey={hasApiKey}
+          scansUsed={scansUsed}
+          scanLimit={5}
         />
       </main>
     </div>

@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
 import { z } from 'zod'
 
-const openai = new OpenAI({
+const defaultClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
@@ -79,7 +79,7 @@ function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100)
 }
 
-export async function extractReceiptData(imageUrl: string): Promise<{
+export async function extractReceiptData(imageUrl: string, apiKey?: string): Promise<{
   raw: ExtractionResult
   receipt: {
     merchantName: string | null
@@ -99,7 +99,9 @@ export async function extractReceiptData(imageUrl: string): Promise<{
     sortOrder: number
   }[]
 }> {
-  const response = await openai.chat.completions.create({
+  const client = apiKey ? new OpenAI({ apiKey }) : defaultClient
+
+  const response = await client.chat.completions.create({
     model: 'gpt-4o',
     messages: [
       {

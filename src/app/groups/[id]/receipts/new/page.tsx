@@ -6,6 +6,8 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ReceiptUploadForm } from './receipt-upload-form'
 
+const FREE_SCAN_LIMIT = 5
+
 export default async function NewReceiptPage({
   params,
 }: {
@@ -14,17 +16,38 @@ export default async function NewReceiptPage({
   const session = await requireAuth()
   const { id } = await params
 
-  const group = await prisma.group.findFirst({
-    where: { id, userId: session.user.id },
-    include: {
-      members: {
-        orderBy: { createdAt: 'asc' },
+  const [group, user] = await Promise.all([
+    prisma.group.findFirst({
+      where: { id, userId: session.user.id },
+      include: {
+        members: {
+          orderBy: { createdAt: 'asc' },
+        },
       },
-    },
-  })
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
+    }),
+  ])
 
   if (!group) {
     notFound()
+  }
+
+  // Calculate remaining scans
+  const hasApiKey = !!user?.openaiApiKey
+  let scansUsed = user?.scanCount ?? 0
+
+  if (user?.scanResetDate) {
+    const now = new Date()
+    const resetDate = new Date(user.scanResetDate)
+    if (
+      resetDate.getMonth() !== now.getMonth() ||
+      resetDate.getFullYear() !== now.getFullYear()
+    ) {
+      scansUsed = 0
+    }
   }
 
   return (
@@ -42,6 +65,9 @@ export default async function NewReceiptPage({
 
         <ReceiptUploadForm
           group={JSON.parse(JSON.stringify(group))}
+          scanLimit={FREE_SCAN_LIMIT}
+          scansUsed={scansUsed}
+          hasApiKey={hasApiKey}
         />
       </main>
     </div>

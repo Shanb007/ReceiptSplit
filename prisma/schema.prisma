@@ -26,6 +26,11 @@ model User {
   splitwiseToken   String?  // Encrypted Splitwise access token
   splitwiseUserId  String?  // Splitwise user ID
 
+  // BYO API key & usage tracking
+  openaiApiKey  String?    // Encrypted OpenAI API key (AES-256-GCM)
+  scanCount     Int        @default(0)
+  scanResetDate DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
