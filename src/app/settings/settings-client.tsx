@@ -167,7 +167,7 @@ export function SettingsClient({
               <p className="text-sm text-[var(--text-muted)] mt-1">
                 {hasKey
                   ? 'Your API key is set. You have unlimited receipt scans.'
-                  : 'Add your own OpenAI API key for unlimited receipt scans. Without one, you get 5 free scans per month.'}
+                  : 'Add your own OpenAI API key for unlimited receipt scans. Without one, you get 3 free scans.'}
               </p>
 
               {/* Scan Usage */}
@@ -176,7 +176,7 @@ export function SettingsClient({
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-[var(--text-muted)]" />
                     <span className="text-sm text-[var(--text-secondary)]">
-                      Scan usage this month
+                      Scan usage
                     </span>
                   </div>
                   <span className="text-sm font-medium text-[var(--text-primary)]">

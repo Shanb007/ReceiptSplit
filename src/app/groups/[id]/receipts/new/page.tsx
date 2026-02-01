@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import { ReceiptUploadForm } from './receipt-upload-form'
 import { isLocalMode } from '@/lib/mode'
 
-const FREE_SCAN_LIMIT = 5
+const FREE_SCAN_LIMIT = 3
 
 export default async function NewReceiptPage({
   params,
@@ -30,7 +30,7 @@ export default async function NewReceiptPage({
       ? null
       : prisma.user.findUnique({
           where: { id: session.user.id },
-          select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
+          select: { openaiApiKey: true, scanCount: true },
         }),
   ])
 
@@ -40,18 +40,7 @@ export default async function NewReceiptPage({
 
   // Calculate remaining scans
   const hasApiKey = !!user?.openaiApiKey
-  let scansUsed = user?.scanCount ?? 0
-
-  if (user?.scanResetDate) {
-    const now = new Date()
-    const resetDate = new Date(user.scanResetDate)
-    if (
-      resetDate.getMonth() !== now.getMonth() ||
-      resetDate.getFullYear() !== now.getFullYear()
-    ) {
-      scansUsed = 0
-    }
-  }
+  const scansUsed = user?.scanCount ?? 0
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">

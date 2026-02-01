@@ -166,7 +166,7 @@ export function ReceiptUploadForm({
                   Free scan limit reached
                 </p>
                 <p className="text-sm text-[var(--text-muted)] mt-1">
-                  You&apos;ve used all {scanLimit} free scans this month. Add your own OpenAI API key in{' '}
+                  You&apos;ve used all {scanLimit} free scans. Add your own OpenAI API key in{' '}
                   <Link href="/settings" className="text-[var(--primary)] underline">
                     Settings
                   </Link>{' '}
@@ -181,7 +181,7 @@ export function ReceiptUploadForm({
         {!isLocalMode && mode === 'scan' && !atLimit && !hasApiKey && (
           <div className="text-xs text-[var(--text-muted)] flex items-center gap-1.5 px-1">
             <Settings className="h-3 w-3" />
-            {scansRemaining} of {scanLimit} free scans remaining this month
+            {scansRemaining} of {scanLimit} free scans remaining
           </div>
         )}
 

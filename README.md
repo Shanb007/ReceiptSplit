@@ -106,7 +106,7 @@ Open [http://localhost:3000](http://localhost:3000) — click "Get Started" and 
 
 ## Cloud Deployment (Multi-User)
 
-For hosting ReceiptSplit as a multi-user service (e.g. on Vercel). Includes Google OAuth, Cloudinary image storage, BYO API key support, and 5 free scans/month per user.
+For hosting ReceiptSplit as a multi-user service (e.g. on Vercel). Includes Google OAuth, Cloudinary image storage, BYO API key support, and 3 free lifetime scans per user.
 
 ### Prerequisites
 

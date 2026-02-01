@@ -6,7 +6,7 @@ import { imageStore } from '@/lib/image-store'
 import { extractReceiptData } from '@/lib/openai'
 import { isLocalMode } from '@/lib/mode'
 
-const FREE_SCAN_LIMIT = 5
+const FREE_SCAN_LIMIT = 3
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (!isLocalMode) {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
+        select: { openaiApiKey: true, scanCount: true },
       })
 
       if (user?.openaiApiKey) {
@@ -63,23 +63,12 @@ export async function POST(request: NextRequest) {
       }
 
       if (!userApiKey) {
-        const now = new Date()
-        let currentCount = user?.scanCount ?? 0
-
-        if (user?.scanResetDate) {
-          const resetDate = new Date(user.scanResetDate)
-          if (
-            resetDate.getMonth() !== now.getMonth() ||
-            resetDate.getFullYear() !== now.getFullYear()
-          ) {
-            currentCount = 0
-          }
-        }
+        const currentCount = user?.scanCount ?? 0
 
         if (currentCount >= FREE_SCAN_LIMIT) {
           return NextResponse.json(
             {
-              error: `You've used your ${FREE_SCAN_LIMIT} free scans this month. Add your own OpenAI API key in Settings for unlimited scans, or self-host the open-source version.`,
+              error: `You've used all ${FREE_SCAN_LIMIT} free scans. Add your own OpenAI API key in Settings for unlimited scans, or self-host the open-source version.`,
               code: 'SCAN_LIMIT_REACHED',
             },
             { status: 403 },
@@ -155,26 +144,9 @@ export async function POST(request: NextRequest) {
 
       // 6. Increment scan count (cloud mode only, no BYO key)
       if (!isLocalMode && !userApiKey) {
-        const now = new Date()
-        const user = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: { scanCount: true, scanResetDate: true },
-        })
-        let newCount = (user?.scanCount ?? 0) + 1
-
-        if (user?.scanResetDate) {
-          const resetDate = new Date(user.scanResetDate)
-          if (
-            resetDate.getMonth() !== now.getMonth() ||
-            resetDate.getFullYear() !== now.getFullYear()
-          ) {
-            newCount = 1
-          }
-        }
-
         await prisma.user.update({
           where: { id: session.user.id },
-          data: { scanCount: newCount, scanResetDate: now },
+          data: { scanCount: { increment: 1 } },
         })
       }
 

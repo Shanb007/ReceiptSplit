@@ -17,7 +17,6 @@ export default async function SettingsPage() {
       splitwiseUserId: true,
       openaiApiKey: true,
       scanCount: true,
-      scanResetDate: true,
     },
   })
 
@@ -39,17 +38,7 @@ export default async function SettingsPage() {
 
   // Compute scan usage
   const hasApiKey = !!user?.openaiApiKey
-  let scansUsed = user?.scanCount ?? 0
-  if (user?.scanResetDate) {
-    const now = new Date()
-    const resetDate = new Date(user.scanResetDate)
-    if (
-      resetDate.getMonth() !== now.getMonth() ||
-      resetDate.getFullYear() !== now.getFullYear()
-    ) {
-      scansUsed = 0
-    }
-  }
+  const scansUsed = user?.scanCount ?? 0
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
@@ -74,7 +63,7 @@ export default async function SettingsPage() {
           splitwiseEmail={splitwiseEmail}
           hasApiKey={hasApiKey}
           scansUsed={scansUsed}
-          scanLimit={5}
+          scanLimit={3}
           isLocalMode={isLocalMode}
         />
       </main>
