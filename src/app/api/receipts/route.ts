@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { uploadReceiptImage } from '@/lib/cloudinary'
+import { imageStore } from '@/lib/image-store'
 import { extractReceiptData } from '@/lib/openai'
-import { decrypt } from '@/lib/encryption'
+import { isLocalMode } from '@/lib/mode'
 
 const FREE_SCAN_LIMIT = 5
 
@@ -45,46 +45,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch user for BYO key and scan tracking
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
-    })
-
-    // Resolve API key: user's BYO key or default
+    // ── BYO key + scan limit (cloud mode only) ──
     let userApiKey: string | undefined
-    if (user?.openaiApiKey) {
-      try {
-        userApiKey = decrypt(user.openaiApiKey)
-      } catch {
-        // Decryption failed — treat as no key
-      }
-    }
+    if (!isLocalMode) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
+      })
 
-    // Scan limit check (only for users without BYO key)
-    if (!userApiKey) {
-      const now = new Date()
-      let currentCount = user?.scanCount ?? 0
-
-      // Reset if different month
-      if (user?.scanResetDate) {
-        const resetDate = new Date(user.scanResetDate)
-        if (
-          resetDate.getMonth() !== now.getMonth() ||
-          resetDate.getFullYear() !== now.getFullYear()
-        ) {
-          currentCount = 0
+      if (user?.openaiApiKey) {
+        try {
+          const { decrypt } = await import('@/lib/encryption')
+          userApiKey = decrypt(user.openaiApiKey)
+        } catch {
+          // Decryption failed — treat as no key
         }
       }
 
-      if (currentCount >= FREE_SCAN_LIMIT) {
-        return NextResponse.json(
-          {
-            error: `You've used your ${FREE_SCAN_LIMIT} free scans this month. Add your own OpenAI API key in Settings for unlimited scans, or self-host the open-source version.`,
-            code: 'SCAN_LIMIT_REACHED',
-          },
-          { status: 403 },
-        )
+      if (!userApiKey) {
+        const now = new Date()
+        let currentCount = user?.scanCount ?? 0
+
+        if (user?.scanResetDate) {
+          const resetDate = new Date(user.scanResetDate)
+          if (
+            resetDate.getMonth() !== now.getMonth() ||
+            resetDate.getFullYear() !== now.getFullYear()
+          ) {
+            currentCount = 0
+          }
+        }
+
+        if (currentCount >= FREE_SCAN_LIMIT) {
+          return NextResponse.json(
+            {
+              error: `You've used your ${FREE_SCAN_LIMIT} free scans this month. Add your own OpenAI API key in Settings for unlimited scans, or self-host the open-source version.`,
+              code: 'SCAN_LIMIT_REACHED',
+            },
+            { status: 403 },
+          )
+        }
       }
     }
 
@@ -98,20 +98,30 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      // 2. Upload image to Cloudinary
+      // 2. Upload image (returns URL in cloud mode, null in local mode)
       const buffer = Buffer.from(await image.arrayBuffer())
-      const imageUrl = await uploadReceiptImage(buffer, image.name)
+      const imageUrl = await imageStore.upload(buffer, image.name)
 
-      // Update receipt with image URL
-      await prisma.receipt.update({
-        where: { id: receipt.id },
-        data: { imageUrl },
-      })
+      // Update receipt with image URL if we have one
+      if (imageUrl) {
+        await prisma.receipt.update({
+          where: { id: receipt.id },
+          data: { imageUrl },
+        })
+      }
 
-      // 3. Extract data with OpenAI (using BYO key if available)
-      const extraction = await extractReceiptData(imageUrl, userApiKey)
+      // 3. Build the image source for OpenAI
+      // In local mode (imageUrl is null), convert to base64 data URI
+      const ocrSource = imageUrl
+        ?? `data:${image.type || 'image/jpeg'};base64,${buffer.toString('base64')}`
 
-      // 4. Save extracted data to database
+      // 4. Extract data with OpenAI
+      const extraction = await extractReceiptData(
+        ocrSource,
+        isLocalMode ? undefined : userApiKey
+      )
+
+      // 5. Save extracted data to database
       const updatedReceipt = await prisma.receipt.update({
         where: { id: receipt.id },
         data: {
@@ -143,12 +153,15 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // 5. Increment scan count (only for users using default key)
-      if (!userApiKey) {
+      // 6. Increment scan count (cloud mode only, no BYO key)
+      if (!isLocalMode && !userApiKey) {
         const now = new Date()
+        const user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { scanCount: true, scanResetDate: true },
+        })
         let newCount = (user?.scanCount ?? 0) + 1
 
-        // Reset if different month
         if (user?.scanResetDate) {
           const resetDate = new Date(user.scanResetDate)
           if (

@@ -1,5 +1,6 @@
 import { getSession } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
+import { isLocalMode } from '@/lib/mode'
 import Link from 'next/link'
 import { Receipt, Camera, Users, Calculator, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react'
 
@@ -9,6 +10,8 @@ export default async function Home() {
   if (session?.user) {
     redirect('/groups')
   }
+
+  const ctaHref = isLocalMode ? '/groups' : '/login'
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
@@ -25,7 +28,7 @@ export default async function Home() {
             </div>
             <span className="text-[var(--text-primary)]">ReceiptSplit</span>
           </div>
-          <Link href="/login" className="btn btn-primary">
+          <Link href={ctaHref} className="btn btn-primary">
             Get Started
           </Link>
         </div>
@@ -53,7 +56,7 @@ export default async function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <Link href="/login" className="btn btn-primary px-6 py-3">
+            <Link href={ctaHref} className="btn btn-primary px-6 py-3">
               Start Splitting Free
               <ArrowRight className="h-4 w-4" />
             </Link>
@@ -206,7 +209,7 @@ export default async function Home() {
                 <p className="text-white/80 mb-5">
                   Join thousands who've ditched the calculator app
                 </p>
-                <Link href="/login" className="btn bg-white text-[var(--primary)] hover:bg-white/90 px-6 py-3 shadow-xl">
+                <Link href={ctaHref} className="btn bg-white text-[var(--primary)] hover:bg-white/90 px-6 py-3 shadow-xl">
                   Get Started Free
                   <ArrowRight className="h-4 w-4" />
                 </Link>

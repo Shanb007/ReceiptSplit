@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Receipt, LogOut, User, ChevronDown, Settings } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
+const isLocal = process.env.NEXT_PUBLIC_MODE === 'local'
+
 export function Header() {
   const { data: session } = useSession()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -67,13 +69,15 @@ export function Header() {
                   <Settings className="h-4 w-4" />
                   Settings
                 </Link>
-                <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--surface-hover)] rounded-lg transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
+                {!isLocal && (
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--surface-hover)] rounded-lg transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                )}
               </div>
             )}
           </div>

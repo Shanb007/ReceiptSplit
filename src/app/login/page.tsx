@@ -1,10 +1,32 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { Receipt, ArrowLeft } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Receipt, ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
+const isLocalMode = process.env.NEXT_PUBLIC_MODE === 'local'
+
 export default function LoginPage() {
+  const [isAutoSigningIn] = useState(isLocalMode)
+
+  useEffect(() => {
+    if (isLocalMode) {
+      signIn('credentials', { callbackUrl: '/groups' })
+    }
+  }, [])
+
+  if (isAutoSigningIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-[var(--primary)] mb-4" />
+          <p className="text-[var(--text-secondary)]">Signing in...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-[var(--background)]">
       {/* Background decorations */}

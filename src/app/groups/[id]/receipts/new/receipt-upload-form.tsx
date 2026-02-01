@@ -21,11 +21,13 @@ export function ReceiptUploadForm({
   scanLimit,
   scansUsed,
   hasApiKey,
+  isLocalMode,
 }: {
   group: GroupData
   scanLimit: number
   scansUsed: number
   hasApiKey: boolean
+  isLocalMode: boolean
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('scan')
@@ -36,8 +38,8 @@ export function ReceiptUploadForm({
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
 
-  const scansRemaining = hasApiKey ? Infinity : scanLimit - scansUsed
-  const atLimit = !hasApiKey && scansRemaining <= 0
+  const scansRemaining = isLocalMode || hasApiKey ? Infinity : scanLimit - scansUsed
+  const atLimit = !isLocalMode && !hasApiKey && scansRemaining <= 0
 
   const canSubmitScan = selectedFile && payerId && !isProcessing && !atLimit
   const canSubmitManual = payerId && !isProcessing
@@ -154,8 +156,8 @@ export function ReceiptUploadForm({
           </div>
         )}
 
-        {/* Scan limit warning */}
-        {mode === 'scan' && atLimit && (
+        {/* Scan limit warning (cloud mode only) */}
+        {!isLocalMode && mode === 'scan' && atLimit && (
           <div className="bg-[var(--warning)]/10 border border-[var(--warning)]/20 px-4 py-4 rounded-xl animate-scale-in">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-[var(--warning)] flex-shrink-0 mt-0.5" />
@@ -175,8 +177,8 @@ export function ReceiptUploadForm({
           </div>
         )}
 
-        {/* Scan usage info */}
-        {mode === 'scan' && !atLimit && !hasApiKey && (
+        {/* Scan usage info (cloud mode only) */}
+        {!isLocalMode && mode === 'scan' && !atLimit && !hasApiKey && (
           <div className="text-xs text-[var(--text-muted)] flex items-center gap-1.5 px-1">
             <Settings className="h-3 w-3" />
             {scansRemaining} of {scanLimit} free scans remaining this month

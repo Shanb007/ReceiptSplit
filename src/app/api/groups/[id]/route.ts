@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { deleteReceiptImage } from '@/lib/cloudinary'
+import { imageStore } from '@/lib/image-store'
 
 const updateGroupSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -132,7 +132,7 @@ export async function DELETE(
     // Clean up Cloudinary images (best-effort)
     for (const r of receipts) {
       if (r.imageUrl) {
-        deleteReceiptImage(r.imageUrl).catch(() => {})
+        imageStore.delete(r.imageUrl).catch(() => {})
       }
     }
 

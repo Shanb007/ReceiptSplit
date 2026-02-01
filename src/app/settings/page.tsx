@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { SettingsClient } from './settings-client'
 import { getCurrentUser } from '@/lib/splitwise'
+import { isLocalMode } from '@/lib/mode'
 
 export default async function SettingsPage() {
   const session = await requireAuth()
@@ -74,6 +75,7 @@ export default async function SettingsPage() {
           hasApiKey={hasApiKey}
           scansUsed={scansUsed}
           scanLimit={5}
+          isLocalMode={isLocalMode}
         />
       </main>
     </div>

@@ -21,6 +21,7 @@ interface SettingsClientProps {
   hasApiKey: boolean
   scansUsed: number
   scanLimit: number
+  isLocalMode: boolean
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -39,6 +40,7 @@ export function SettingsClient({
   hasApiKey: initialHasKey,
   scansUsed,
   scanLimit,
+  isLocalMode,
 }: SettingsClientProps) {
   const searchParams = useSearchParams()
   const [connected, setConnected] = useState(initialConnected)
@@ -146,125 +148,127 @@ export function SettingsClient({
         </div>
       )}
 
-      {/* OpenAI API Key Card */}
-      <div className="card p-6 animate-fade-in-up">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 flex items-center justify-center flex-shrink-0">
-            <Key className="h-6 w-6 text-[var(--primary)]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                OpenAI API Key
-              </h2>
-              {hasKey && (
-                <span className="badge badge-success">Active</span>
-              )}
+      {/* OpenAI API Key Card (cloud mode only) */}
+      {!isLocalMode && (
+        <div className="card p-6 animate-fade-in-up">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 flex items-center justify-center flex-shrink-0">
+              <Key className="h-6 w-6 text-[var(--primary)]" />
             </div>
-            <p className="text-sm text-[var(--text-muted)] mt-1">
-              {hasKey
-                ? 'Your API key is set. You have unlimited receipt scans.'
-                : 'Add your own OpenAI API key for unlimited receipt scans. Without one, you get 5 free scans per month.'}
-            </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  OpenAI API Key
+                </h2>
+                {hasKey && (
+                  <span className="badge badge-success">Active</span>
+                )}
+              </div>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                {hasKey
+                  ? 'Your API key is set. You have unlimited receipt scans.'
+                  : 'Add your own OpenAI API key for unlimited receipt scans. Without one, you get 5 free scans per month.'}
+              </p>
 
-            {/* Scan Usage */}
-            <div className="mt-4 p-3 rounded-xl bg-[var(--surface-hover)]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-[var(--text-muted)]" />
-                  <span className="text-sm text-[var(--text-secondary)]">
-                    Scan usage this month
+              {/* Scan Usage */}
+              <div className="mt-4 p-3 rounded-xl bg-[var(--surface-hover)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-[var(--text-muted)]" />
+                    <span className="text-sm text-[var(--text-secondary)]">
+                      Scan usage this month
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {hasKey ? 'Unlimited' : `${scansUsed} / ${scanLimit}`}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {hasKey ? 'Unlimited' : `${scansUsed} / ${scanLimit}`}
-                </span>
+                {!hasKey && (
+                  <div className="mt-2 w-full bg-[var(--surface)] rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full transition-all ${
+                        scansUsed >= scanLimit
+                          ? 'bg-[var(--error)]'
+                          : scansUsed >= scanLimit - 1
+                            ? 'bg-[var(--warning)]'
+                            : 'bg-[var(--primary)]'
+                      }`}
+                      style={{ width: `${Math.min((scansUsed / scanLimit) * 100, 100)}%` }}
+                    />
+                  </div>
+                )}
               </div>
-              {!hasKey && (
-                <div className="mt-2 w-full bg-[var(--surface)] rounded-full h-1.5">
-                  <div
-                    className={`h-1.5 rounded-full transition-all ${
-                      scansUsed >= scanLimit
-                        ? 'bg-[var(--error)]'
-                        : scansUsed >= scanLimit - 1
-                          ? 'bg-[var(--warning)]'
-                          : 'bg-[var(--primary)]'
-                    }`}
-                    style={{ width: `${Math.min((scansUsed / scanLimit) * 100, 100)}%` }}
-                  />
+
+              {/* Key error/success messages */}
+              {keyError && (
+                <div className="mt-3 text-sm text-[var(--error)] flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  {keyError}
                 </div>
               )}
-            </div>
+              {keySuccess && (
+                <div className="mt-3 text-sm text-[var(--success)] flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  {keySuccess}
+                </div>
+              )}
 
-            {/* Key error/success messages */}
-            {keyError && (
-              <div className="mt-3 text-sm text-[var(--error)] flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                {keyError}
-              </div>
-            )}
-            {keySuccess && (
-              <div className="mt-3 text-sm text-[var(--success)] flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                {keySuccess}
-              </div>
-            )}
-
-            {/* Key input or remove */}
-            <div className="mt-4">
-              {hasKey ? (
-                <button
-                  type="button"
-                  onClick={handleRemoveKey}
-                  disabled={isRemovingKey}
-                  className="btn btn-secondary text-[var(--error)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isRemovingKey ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  {isRemovingKey ? 'Removing...' : 'Remove API Key'}
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="sk-..."
-                    className="input flex-1"
-                  />
+              {/* Key input or remove */}
+              <div className="mt-4">
+                {hasKey ? (
                   <button
                     type="button"
-                    onClick={handleSaveKey}
-                    disabled={isSavingKey || !apiKeyInput.trim()}
-                    className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleRemoveKey}
+                    disabled={isRemovingKey}
+                    className="btn btn-secondary text-[var(--error)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSavingKey ? (
+                    {isRemovingKey ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Save'
+                      <Trash2 className="h-4 w-4" />
                     )}
+                    {isRemovingKey ? 'Removing...' : 'Remove API Key'}
                   </button>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder="sk-..."
+                      className="input flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveKey}
+                      disabled={isSavingKey || !apiKeyInput.trim()}
+                      className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSavingKey ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            <p className="text-xs text-[var(--text-muted)] mt-3">
-              Your key is encrypted and stored securely. Get one at{' '}
-              <a
-                href="https://platform.openai.com/api-keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--primary)] underline"
-              >
-                platform.openai.com
-              </a>
-            </p>
+              <p className="text-xs text-[var(--text-muted)] mt-3">
+                Your key is encrypted and stored securely. Get one at{' '}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--primary)] underline"
+                >
+                  platform.openai.com
+                </a>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Splitwise Integration Card */}
       <div className="card p-6 animate-fade-in-up">

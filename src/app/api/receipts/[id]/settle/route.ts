@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { computeSettlements } from '@/lib/settlement-engine'
-import { deleteReceiptImage } from '@/lib/cloudinary'
+import { imageStore } from '@/lib/image-store'
 
 export async function POST(
   _request: NextRequest,
@@ -109,7 +109,7 @@ export async function POST(
 
     // Clean up Cloudinary image (best-effort, don't block response)
     if (receipt.imageUrl) {
-      deleteReceiptImage(receipt.imageUrl).catch(() => {})
+      imageStore.delete(receipt.imageUrl).catch(() => {})
     }
 
     return NextResponse.json({ settlements })

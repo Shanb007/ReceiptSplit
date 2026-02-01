@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ReceiptUploadForm } from './receipt-upload-form'
+import { isLocalMode } from '@/lib/mode'
 
 const FREE_SCAN_LIMIT = 5
 
@@ -25,10 +26,12 @@ export default async function NewReceiptPage({
         },
       },
     }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
-    }),
+    isLocalMode
+      ? null
+      : prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { openaiApiKey: true, scanCount: true, scanResetDate: true },
+        }),
   ])
 
   if (!group) {
@@ -68,6 +71,7 @@ export default async function NewReceiptPage({
           scanLimit={FREE_SCAN_LIMIT}
           scansUsed={scansUsed}
           hasApiKey={hasApiKey}
+          isLocalMode={isLocalMode}
         />
       </main>
     </div>
