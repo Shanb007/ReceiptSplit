@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { Receipt, LogOut, User, ChevronDown } from 'lucide-react'
+import { Receipt, LogOut, User, ChevronDown, Settings } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 export function Header() {
@@ -59,6 +59,14 @@ export function Header() {
                   <p className="text-sm font-medium text-[var(--text-primary)]">{session.user.name}</p>
                   <p className="text-xs text-[var(--text-muted)] truncate">{session.user.email}</p>
                 </div>
+                <Link
+                  href="/settings"
+                  onClick={() => setDropdownOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--surface-hover)] rounded-lg transition-colors"
