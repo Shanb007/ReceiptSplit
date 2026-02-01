@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   Users,
 } from 'lucide-react'
-import { ItemSplitter } from '@/components/item-splitter'
+import { ItemSplitter, type SplitMode } from '@/components/item-splitter'
 import { TaxTipStrategySelector } from '@/components/tax-tip-strategy-selector'
 
 interface MemberData {
@@ -72,8 +72,33 @@ function formatCents(cents: number): string {
   return (cents / 100).toFixed(2)
 }
 
-// State type: Map<lineItemId, Map<memberId, shareWeight>>
+// Map<lineItemId, Map<memberId, number>>
 type SharesMap = Map<string, Map<string, number>>
+
+/**
+ * Detect if saved assignments for an item were manual mode.
+ * Convention: manual mode saves shareNumerator = cents, shareDenominator = lineTotal.
+ * Ratio mode saves shareNumerator = small weight, shareDenominator = sum of weights.
+ * If shareDenominator equals the item lineTotal, treat as manual.
+ */
+function detectMode(
+  itemId: string,
+  assignments: AssignmentData[],
+  lineItems: LineItemData[]
+): SplitMode {
+  const item = lineItems.find((i) => i.id === itemId)
+  if (!item) return 'ratio'
+  const itemAssignments = assignments.filter((a) => a.lineItemId === itemId)
+  if (itemAssignments.length < 2) return 'ratio'
+  // If every assignment's denominator matches the item lineTotal, it's manual
+  const allManual = itemAssignments.every((a) => a.shareDenominator === item.lineTotal)
+  // Extra guard: in manual mode, numerators should sum to lineTotal
+  if (allManual) {
+    const numSum = itemAssignments.reduce((s, a) => s + a.shareNumerator, 0)
+    if (numSum === item.lineTotal) return 'manual'
+  }
+  return 'ratio'
+}
 
 export function SplitClient({
   receipt: initialReceipt,
@@ -85,15 +110,43 @@ export function SplitClient({
   const router = useRouter()
   const [receipt, setReceipt] = useState(initialReceipt)
 
-  // Build initial shares map from saved assignments
+  // Split mode per item
+  const [splitModes, setSplitModes] = useState<Map<string, SplitMode>>(() => {
+    const map = new Map<string, SplitMode>()
+    for (const item of initialReceipt.lineItems) {
+      map.set(item.id, detectMode(item.id, initialAssignments, initialReceipt.lineItems))
+    }
+    return map
+  })
+
+  // Ratio weights: Map<lineItemId, Map<memberId, weight>>
   const [shares, setShares] = useState<SharesMap>(() => {
     const map: SharesMap = new Map()
     for (const item of initialReceipt.lineItems) {
       map.set(item.id, new Map())
     }
     for (const a of initialAssignments) {
-      const itemMap = map.get(a.lineItemId)
-      if (itemMap) itemMap.set(a.memberId, a.shareNumerator)
+      const mode = detectMode(a.lineItemId, initialAssignments, initialReceipt.lineItems)
+      if (mode === 'ratio') {
+        const itemMap = map.get(a.lineItemId)
+        if (itemMap) itemMap.set(a.memberId, a.shareNumerator)
+      }
+    }
+    return map
+  })
+
+  // Manual amounts in cents: Map<lineItemId, Map<memberId, cents>>
+  const [manualAmounts, setManualAmounts] = useState<SharesMap>(() => {
+    const map: SharesMap = new Map()
+    for (const item of initialReceipt.lineItems) {
+      map.set(item.id, new Map())
+    }
+    for (const a of initialAssignments) {
+      const mode = detectMode(a.lineItemId, initialAssignments, initialReceipt.lineItems)
+      if (mode === 'manual') {
+        const itemMap = map.get(a.lineItemId)
+        if (itemMap) itemMap.set(a.memberId, a.shareNumerator)
+      }
     }
     return map
   })
@@ -104,24 +157,96 @@ export function SplitClient({
 
   const members = receipt.group.members
 
-  // Toggle a member on/off for an item (default share = 1)
-  const handleToggleMember = (itemId: string, memberId: string) => {
-    setShares((prev) => {
-      const next = new Map(prev)
-      const itemMap = new Map(next.get(itemId) || [])
-      if (itemMap.has(memberId)) {
-        itemMap.delete(memberId)
-      } else {
-        itemMap.set(memberId, 1)
-      }
-      next.set(itemId, itemMap)
-      return next
-    })
+  const clearStatus = () => {
     setSaveSuccess(false)
     setError('')
   }
 
-  // Change share weight for a member on an item
+  // ─── Mode switching ───
+  const handleModeChange = (itemId: string, mode: SplitMode) => {
+    const currentMode = splitModes.get(itemId)
+    if (currentMode === mode) return
+
+    if (mode === 'manual') {
+      // Switching to manual: pre-fill from ratio-computed amounts
+      const ratioMap = shares.get(itemId) || new Map()
+      const item = receipt.lineItems.find((i) => i.id === itemId)
+      if (item && ratioMap.size > 0) {
+        const totalWeight = Array.from(ratioMap.values()).reduce((s, v) => s + v, 0)
+        const newManual = new Map<string, number>()
+        let allocated = 0
+        const entries = Array.from(ratioMap.entries())
+        for (let i = 0; i < entries.length; i++) {
+          const [memberId, weight] = entries[i]
+          if (i === entries.length - 1) {
+            newManual.set(memberId, item.lineTotal - allocated)
+          } else {
+            const share = Math.floor((item.lineTotal * weight) / totalWeight)
+            newManual.set(memberId, share)
+            allocated += share
+          }
+        }
+        setManualAmounts((prev) => {
+          const next = new Map(prev)
+          next.set(itemId, newManual)
+          return next
+        })
+      }
+    } else {
+      // Switching to ratio: reset to equal (1 per person), keeping same members
+      const manualMap = manualAmounts.get(itemId) || new Map()
+      const newRatio = new Map<string, number>()
+      for (const memberId of manualMap.keys()) {
+        newRatio.set(memberId, 1)
+      }
+      setShares((prev) => {
+        const next = new Map(prev)
+        next.set(itemId, newRatio)
+        return next
+      })
+    }
+
+    setSplitModes((prev) => {
+      const next = new Map(prev)
+      next.set(itemId, mode)
+      return next
+    })
+    clearStatus()
+  }
+
+  // ─── Toggle member (works in both modes) ───
+  const handleToggleMember = (itemId: string, memberId: string) => {
+    const mode = splitModes.get(itemId) || 'ratio'
+
+    if (mode === 'ratio') {
+      setShares((prev) => {
+        const next = new Map(prev)
+        const itemMap = new Map(next.get(itemId) || [])
+        if (itemMap.has(memberId)) {
+          itemMap.delete(memberId)
+        } else {
+          itemMap.set(memberId, 1)
+        }
+        next.set(itemId, itemMap)
+        return next
+      })
+    } else {
+      setManualAmounts((prev) => {
+        const next = new Map(prev)
+        const itemMap = new Map(next.get(itemId) || [])
+        if (itemMap.has(memberId)) {
+          itemMap.delete(memberId)
+        } else {
+          itemMap.set(memberId, 0)
+        }
+        next.set(itemId, itemMap)
+        return next
+      })
+    }
+    clearStatus()
+  }
+
+  // ─── Ratio share change ───
   const handleShareChange = (itemId: string, memberId: string, share: number) => {
     setShares((prev) => {
       const next = new Map(prev)
@@ -130,45 +255,86 @@ export function SplitClient({
       next.set(itemId, itemMap)
       return next
     })
-    setSaveSuccess(false)
-    setError('')
+    clearStatus()
   }
 
-  // Select/deselect all members for an item (resets shares to 1)
-  const handleSelectAll = (itemId: string) => {
-    setShares((prev) => {
+  // ─── Manual amount change ───
+  const handleManualAmountChange = (itemId: string, memberId: string, cents: number) => {
+    setManualAmounts((prev) => {
       const next = new Map(prev)
-      const current = next.get(itemId) || new Map()
-      const allSelected = members.every((m) => current.has(m.id))
-      if (allSelected) {
-        next.set(itemId, new Map())
-      } else {
-        const itemMap = new Map<string, number>()
-        members.forEach((m) => itemMap.set(m.id, 1))
-        next.set(itemId, itemMap)
-      }
+      const itemMap = new Map(next.get(itemId) || [])
+      itemMap.set(memberId, cents)
+      next.set(itemId, itemMap)
       return next
     })
-    setSaveSuccess(false)
-    setError('')
+    clearStatus()
   }
 
-  // Select all members for ALL items (resets shares to 1)
+  // ─── Select all (works in both modes) ───
+  const handleSelectAll = (itemId: string) => {
+    const mode = splitModes.get(itemId) || 'ratio'
+
+    if (mode === 'ratio') {
+      setShares((prev) => {
+        const next = new Map(prev)
+        const current = next.get(itemId) || new Map()
+        const allSelected = members.every((m) => current.has(m.id))
+        if (allSelected) {
+          next.set(itemId, new Map())
+        } else {
+          const itemMap = new Map<string, number>()
+          members.forEach((m) => itemMap.set(m.id, 1))
+          next.set(itemId, itemMap)
+        }
+        return next
+      })
+    } else {
+      setManualAmounts((prev) => {
+        const next = new Map(prev)
+        const current = next.get(itemId) || new Map()
+        const allSelected = members.every((m) => current.has(m.id))
+        if (allSelected) {
+          next.set(itemId, new Map())
+        } else {
+          const itemMap = new Map<string, number>()
+          members.forEach((m) => itemMap.set(m.id, current.get(m.id) || 0))
+          next.set(itemId, itemMap)
+        }
+        return next
+      })
+    }
+    clearStatus()
+  }
+
+  // ─── Everyone on all ───
   const handleSelectAllEveryone = () => {
     setShares((prev) => {
       const next = new Map(prev)
       for (const item of receipt.lineItems) {
-        const itemMap = new Map<string, number>()
-        members.forEach((m) => itemMap.set(m.id, 1))
-        next.set(item.id, itemMap)
+        if ((splitModes.get(item.id) || 'ratio') === 'ratio') {
+          const itemMap = new Map<string, number>()
+          members.forEach((m) => itemMap.set(m.id, 1))
+          next.set(item.id, itemMap)
+        }
       }
       return next
     })
-    setSaveSuccess(false)
-    setError('')
+    setManualAmounts((prev) => {
+      const next = new Map(prev)
+      for (const item of receipt.lineItems) {
+        if (splitModes.get(item.id) === 'manual') {
+          const current = next.get(item.id) || new Map()
+          const itemMap = new Map<string, number>()
+          members.forEach((m) => itemMap.set(m.id, current.get(m.id) || 0))
+          next.set(item.id, itemMap)
+        }
+      }
+      return next
+    })
+    clearStatus()
   }
 
-  // Strategy changes — persist via existing receipt PUT
+  // ─── Strategy changes ───
   const handleTaxStrategyChange = async (strategy: 'PROPORTIONAL' | 'EQUAL') => {
     const prev = receipt.taxStrategy
     setReceipt((r) => ({ ...r, taxStrategy: strategy }))
@@ -199,13 +365,46 @@ export function SplitClient({
     }
   }
 
-  // Save all assignments
+  // ─── Validation ───
+  const getItemAssignedCount = (itemId: string) => {
+    const mode = splitModes.get(itemId) || 'ratio'
+    const map = mode === 'ratio' ? shares.get(itemId) : manualAmounts.get(itemId)
+    return map?.size || 0
+  }
+
+  const getManualError = (itemId: string): string | null => {
+    if ((splitModes.get(itemId) || 'ratio') !== 'manual') return null
+    const map = manualAmounts.get(itemId)
+    if (!map || map.size === 0) return null
+    const item = receipt.lineItems.find((i) => i.id === itemId)
+    if (!item) return null
+    const sum = Array.from(map.values()).reduce((s, v) => s + v, 0)
+    if (sum !== item.lineTotal) {
+      const diff = item.lineTotal - sum
+      return diff > 0
+        ? `$${formatCents(diff)} unallocated`
+        : `$${formatCents(Math.abs(diff))} over`
+    }
+    return null
+  }
+
+  // ─── Save ───
   const handleSave = async () => {
-    const unassigned = receipt.lineItems.filter(
-      (item) => !(shares.get(item.id)?.size)
-    )
+    // Check all items assigned
+    const unassigned = receipt.lineItems.filter((item) => getItemAssignedCount(item.id) === 0)
     if (unassigned.length > 0) {
       setError(`${unassigned.length} item(s) still need to be assigned to at least one person`)
+      return
+    }
+
+    // Check manual items balance
+    const manualErrors: string[] = []
+    for (const item of receipt.lineItems) {
+      const err = getManualError(item.id)
+      if (err) manualErrors.push(`${item.name}: ${err}`)
+    }
+    if (manualErrors.length > 0) {
+      setError(`Manual split amounts don't add up: ${manualErrors.join(', ')}`)
       return
     }
 
@@ -219,15 +418,31 @@ export function SplitClient({
         shareDenominator: number
       }[] = []
 
-      for (const [lineItemId, memberMap] of shares) {
-        const totalWeight = Array.from(memberMap.values()).reduce((s, v) => s + v, 0)
-        for (const [memberId, weight] of memberMap) {
-          flatAssignments.push({
-            lineItemId,
-            memberId,
-            shareNumerator: weight,
-            shareDenominator: totalWeight,
-          })
+      for (const item of receipt.lineItems) {
+        const mode = splitModes.get(item.id) || 'ratio'
+
+        if (mode === 'ratio') {
+          const memberMap = shares.get(item.id) || new Map()
+          const totalWeight = Array.from(memberMap.values()).reduce((s, v) => s + v, 0)
+          for (const [memberId, weight] of memberMap) {
+            flatAssignments.push({
+              lineItemId: item.id,
+              memberId,
+              shareNumerator: weight,
+              shareDenominator: totalWeight,
+            })
+          }
+        } else {
+          // Manual: store cents as numerator, lineTotal as denominator
+          const amountMap = manualAmounts.get(item.id) || new Map()
+          for (const [memberId, cents] of amountMap) {
+            flatAssignments.push({
+              lineItemId: item.id,
+              memberId,
+              shareNumerator: cents,
+              shareDenominator: item.lineTotal,
+            })
+          }
         }
       }
 
@@ -243,7 +458,6 @@ export function SplitClient({
       }
 
       setSaveSuccess(true)
-      // Redirect to receipt page after short delay so user sees the success
       setTimeout(() => {
         router.push(`/groups/${receipt.group.id}/receipts/${receipt.id}`)
       }, 800)
@@ -254,7 +468,7 @@ export function SplitClient({
     }
   }
 
-  // Live per-person totals using ratio-aware math
+  // ─── Live per-person totals ───
   const personTotals = useMemo(() => {
     const totals = new Map<string, { items: number; tax: number; tip: number; total: number }>()
 
@@ -264,33 +478,44 @@ export function SplitClient({
 
     const allItemsSum = receipt.lineItems.reduce((sum, item) => sum + item.lineTotal, 0)
 
-    // Step 1: compute each person's item share using ratios
     for (const item of receipt.lineItems) {
-      const memberMap = shares.get(item.id)
-      if (!memberMap || memberMap.size === 0) continue
+      const mode = splitModes.get(item.id) || 'ratio'
 
-      const totalWeight = Array.from(memberMap.values()).reduce((s, v) => s + v, 0)
-      if (totalWeight === 0) continue
+      if (mode === 'manual') {
+        // Manual: use amounts directly
+        const amountMap = manualAmounts.get(item.id)
+        if (!amountMap || amountMap.size === 0) continue
+        for (const [memberId, cents] of amountMap) {
+          const entry = totals.get(memberId)
+          if (entry) entry.items += cents
+        }
+      } else {
+        // Ratio
+        const memberMap = shares.get(item.id)
+        if (!memberMap || memberMap.size === 0) continue
 
-      let allocated = 0
-      const entries = Array.from(memberMap.entries())
-      for (let i = 0; i < entries.length; i++) {
-        const [memberId, weight] = entries[i]
-        const entry = totals.get(memberId)
-        if (!entry) continue
+        const totalWeight = Array.from(memberMap.values()).reduce((s, v) => s + v, 0)
+        if (totalWeight === 0) continue
 
-        if (i === entries.length - 1) {
-          // Last person gets remainder to avoid rounding issues
-          entry.items += item.lineTotal - allocated
-        } else {
-          const share = Math.floor((item.lineTotal * weight) / totalWeight)
-          entry.items += share
-          allocated += share
+        let allocated = 0
+        const entries = Array.from(memberMap.entries())
+        for (let i = 0; i < entries.length; i++) {
+          const [memberId, weight] = entries[i]
+          const entry = totals.get(memberId)
+          if (!entry) continue
+
+          if (i === entries.length - 1) {
+            entry.items += item.lineTotal - allocated
+          } else {
+            const share = Math.floor((item.lineTotal * weight) / totalWeight)
+            entry.items += share
+            allocated += share
+          }
         }
       }
     }
 
-    // Step 2: allocate tax
+    // Allocate tax
     const tax = receipt.tax || 0
     if (tax > 0) {
       const participants = Array.from(totals.entries()).filter(([, v]) => v.items > 0)
@@ -314,7 +539,7 @@ export function SplitClient({
       }
     }
 
-    // Step 3: allocate tip
+    // Allocate tip
     const tip = receipt.tip || 0
     if (tip > 0) {
       const participants = Array.from(totals.entries()).filter(([, v]) => v.items > 0)
@@ -338,13 +563,12 @@ export function SplitClient({
       }
     }
 
-    // Step 4: compute final total per person
     for (const [, entry] of totals) {
       entry.total = entry.items + entry.tax + entry.tip
     }
 
     return totals
-  }, [receipt, shares, members])
+  }, [receipt, shares, manualAmounts, splitModes, members])
 
   const participantsWithTotals = Array.from(personTotals.entries()).filter(
     ([, v]) => v.total > 0
@@ -352,10 +576,12 @@ export function SplitClient({
   const grandTotal = participantsWithTotals.reduce((sum, [, v]) => sum + v.total, 0)
 
   const unassignedCount = receipt.lineItems.filter(
-    (item) => !(shares.get(item.id)?.size)
+    (item) => getItemAssignedCount(item.id) === 0
   ).length
 
-  const allAssigned = unassignedCount === 0 && receipt.lineItems.length > 0
+  const hasManualErrors = receipt.lineItems.some((item) => getManualError(item.id) !== null)
+
+  const allAssigned = unassignedCount === 0 && receipt.lineItems.length > 0 && !hasManualErrors
 
   return (
     <>
@@ -397,9 +623,9 @@ export function SplitClient({
         </div>
       </div>
 
-      {/* Two-column layout: items on left, preview on right */}
+      {/* Two-column layout */}
       <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-6">
-        {/* Left column — items + strategy */}
+        {/* Left column */}
         <div>
           {/* Assign Items */}
           <div className="card mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
@@ -428,8 +654,12 @@ export function SplitClient({
                   item={item}
                   members={members}
                   memberShares={shares.get(item.id) || new Map()}
+                  manualAmounts={manualAmounts.get(item.id) || new Map()}
+                  splitMode={splitModes.get(item.id) || 'ratio'}
                   onToggleMember={handleToggleMember}
                   onShareChange={handleShareChange}
+                  onManualAmountChange={handleManualAmountChange}
+                  onModeChange={handleModeChange}
                   onSelectAll={handleSelectAll}
                 />
               ))
@@ -457,7 +687,7 @@ export function SplitClient({
           )}
         </div>
 
-        {/* Right column — sticky preview + save */}
+        {/* Right column — sticky */}
         <div className="lg:sticky lg:top-6 lg:self-start">
           {/* Split Preview */}
           <div className="card p-5 mb-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
@@ -538,6 +768,11 @@ export function SplitClient({
                 <span className="text-[var(--success)] flex items-center gap-1.5">
                   <CheckCircle className="h-4 w-4" />
                   All items assigned
+                </span>
+              ) : hasManualErrors ? (
+                <span className="text-[var(--error)] flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4" />
+                  Manual split amounts don&apos;t add up
                 </span>
               ) : (
                 <span className="text-[var(--warning)] flex items-center gap-1.5">
