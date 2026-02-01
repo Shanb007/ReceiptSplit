@@ -13,7 +13,7 @@ function centsToString(cents: number): string {
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -23,6 +23,17 @@ export async function POST(
     }
 
     const { id } = await params
+
+    // Read optional group_id from request body
+    let groupId: number | undefined
+    try {
+      const body = await request.json()
+      if (body.group_id && typeof body.group_id === 'number') {
+        groupId = body.group_id
+      }
+    } catch {
+      // No body or invalid JSON — that's fine, group_id is optional
+    }
 
     // Fetch user's Splitwise token
     const user = await prisma.user.findUnique({
@@ -159,6 +170,7 @@ export async function POST(
       description: receipt.merchantName || 'Receipt from ReceiptSplit',
       date,
       currency_code: 'USD',
+      group_id: groupId,
       users,
     })
 

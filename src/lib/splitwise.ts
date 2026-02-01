@@ -89,7 +89,21 @@ export interface SplitwiseFriend {
   picture?: { medium?: string } | null
 }
 
-// ── User & Friends ───────────────────────────────────────────
+export interface SplitwiseGroupMember {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+  picture?: { medium?: string } | null
+}
+
+export interface SplitwiseGroup {
+  id: number
+  name: string
+  members: SplitwiseGroupMember[]
+}
+
+// ── User, Friends & Groups ───────────────────────────────────
 
 export async function getCurrentUser(
   token: string,
@@ -109,6 +123,16 @@ export async function getFriends(
     '/get_friends',
   )
   return data.friends
+}
+
+export async function getGroups(
+  token: string,
+): Promise<SplitwiseGroup[]> {
+  const data = await apiGet<{ groups: SplitwiseGroup[] }>(
+    token,
+    '/get_groups',
+  )
+  return data.groups
 }
 
 // ── Create Expense ───────────────────────────────────────────

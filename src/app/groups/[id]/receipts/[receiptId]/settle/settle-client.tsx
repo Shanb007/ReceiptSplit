@@ -88,6 +88,9 @@ export function SettleClient({
   const [membersState, setMembersState] = useState<MemberData[]>(
     initialReceipt.group.members,
   )
+  const [splitwiseGroupId, setSplitwiseGroupId] = useState<number | null>(
+    null,
+  )
 
   const hasSettlements = settlements.length > 0
   const grandTotal = settlements.reduce((sum, s) => sum + s.finalAmount, 0)
@@ -144,7 +147,13 @@ export function SettleClient({
     try {
       const res = await fetch(
         `/api/receipts/${receipt.id}/export/splitwise`,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(
+            splitwiseGroupId ? { group_id: splitwiseGroupId } : {},
+          ),
+        },
       )
       if (!res.ok) {
         const data = await res.json()
@@ -161,6 +170,7 @@ export function SettleClient({
 
   const handleMappingComplete = (
     updated: { memberId: string; memberName: string; splitwiseUserId: string | null }[],
+    swGroupId: number,
   ) => {
     setMembersState((prev) =>
       prev.map((m) => {
@@ -168,6 +178,7 @@ export function SettleClient({
         return u ? { ...m, splitwiseUserId: u.splitwiseUserId } : m
       }),
     )
+    setSplitwiseGroupId(swGroupId)
     setShowMapper(false)
   }
 
