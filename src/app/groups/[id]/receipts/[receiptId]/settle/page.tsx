@@ -23,7 +23,10 @@ export default async function SettlePage({
     include: {
       payer: true,
       group: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          splitwiseGroupId: true,
           members: {
             orderBy: { createdAt: 'asc' },
             select: {

@@ -63,6 +63,7 @@ interface ReceiptData {
   group: {
     id: string
     name: string
+    splitwiseGroupId: number | null
     members: MemberData[]
   }
 }
@@ -89,7 +90,7 @@ export function SettleClient({
     initialReceipt.group.members,
   )
   const [splitwiseGroupId, setSplitwiseGroupId] = useState<number | null>(
-    null,
+    initialReceipt.group.splitwiseGroupId,
   )
 
   const hasSettlements = settlements.length > 0
@@ -128,7 +129,7 @@ export function SettleClient({
       return
     }
 
-    // Pre-check: all settlement members mapped?
+    // Pre-check: all settlement members mapped AND group linked?
     const settlementMemberIds = settlements.map((s) => s.memberId)
     const unmapped = membersState
       .filter(
@@ -137,7 +138,7 @@ export function SettleClient({
       )
       .map((m) => m.name)
 
-    if (unmapped.length > 0) {
+    if (unmapped.length > 0 || !splitwiseGroupId) {
       setShowMapper(true)
       return
     }
@@ -361,26 +362,25 @@ export function SettleClient({
             </button>
 
             {/* Export to Splitwise */}
-            {exportSuccess ? (
-              <span className="btn btn-secondary cursor-default">
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : exportSuccess ? (
                 <CheckCircle className="h-4 w-4 text-[var(--success)]" />
-                Exported to Splitwise
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={handleExport}
-                disabled={isExporting}
-                className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="h-4 w-4" />
-                )}
-                {isExporting ? 'Exporting...' : 'Export to Splitwise'}
-              </button>
-            )}
+              ) : (
+                <ExternalLink className="h-4 w-4" />
+              )}
+              {isExporting
+                ? 'Exporting...'
+                : exportSuccess
+                  ? 'Re-export to Splitwise'
+                  : 'Export to Splitwise'}
+            </button>
 
             <Link
               href={`/groups/${receipt.group.id}`}

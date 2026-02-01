@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 const updateGroupSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  splitwiseGroupId: z.number().int().nullable().optional(),
 })
 
 export async function GET(

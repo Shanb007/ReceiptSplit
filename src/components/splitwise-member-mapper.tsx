@@ -159,6 +159,17 @@ export function SplitwiseMemberMapper({
         }
       }
 
+      // Also save the Splitwise group ID to the group
+      promises.push(
+        fetch(`/api/groups/${groupId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ splitwiseGroupId: selectedGroup!.id }),
+        }).then((res) => {
+          if (!res.ok) throw new Error('Failed to save Splitwise group link')
+        }),
+      )
+
       await Promise.all(promises)
 
       onMappingComplete(
