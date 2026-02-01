@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { deleteReceiptImage } from '@/lib/cloudinary'
 
 const updateGroupSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -111,6 +112,12 @@ export async function DELETE(
 
     const { id } = await params
 
+    // Fetch receipt images before cascade delete
+    const receipts = await prisma.receipt.findMany({
+      where: { groupId: id, group: { userId: session.user.id }, imageUrl: { not: null } },
+      select: { imageUrl: true },
+    })
+
     const deleted = await prisma.group.deleteMany({
       where: {
         id,
@@ -120,6 +127,13 @@ export async function DELETE(
 
     if (deleted.count === 0) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 })
+    }
+
+    // Clean up Cloudinary images (best-effort)
+    for (const r of receipts) {
+      if (r.imageUrl) {
+        deleteReceiptImage(r.imageUrl).catch(() => {})
+      }
     }
 
     return NextResponse.json({ success: true })

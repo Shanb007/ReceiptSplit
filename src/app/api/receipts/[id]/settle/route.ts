@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { computeSettlements } from '@/lib/settlement-engine'
+import { deleteReceiptImage } from '@/lib/cloudinary'
 
 export async function POST(
   _request: NextRequest,
@@ -91,10 +92,10 @@ export async function POST(
         })
       }
 
-      // Update receipt status to SETTLED
+      // Update receipt status to SETTLED and clear image URL
       await tx.receipt.update({
         where: { id },
-        data: { status: 'SETTLED' },
+        data: { status: 'SETTLED', imageUrl: null },
       })
 
       // Return saved settlements with member info
@@ -105,6 +106,11 @@ export async function POST(
         },
       })
     })
+
+    // Clean up Cloudinary image (best-effort, don't block response)
+    if (receipt.imageUrl) {
+      deleteReceiptImage(receipt.imageUrl).catch(() => {})
+    }
 
     return NextResponse.json({ settlements })
   } catch (error) {
