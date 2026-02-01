@@ -9,6 +9,7 @@ import {
   Store,
   Image as ImageIcon,
   Users,
+  CheckCircle,
 } from 'lucide-react'
 import { ItemRow, type LineItemData } from '@/components/item-row'
 import { AddItemForm } from '@/components/add-item-form'
@@ -185,7 +186,9 @@ export function ReceiptReviewClient({ receipt: initialReceipt }: { receipt: Rece
       {/* Next step */}
       <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
         <p className="text-sm text-[var(--text-muted)] mb-3">
-          Once items look correct, proceed to split among members
+          {receipt.status === 'SETTLED'
+            ? 'This receipt has been settled'
+            : 'Once items look correct, proceed to split among members'}
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link
@@ -199,8 +202,17 @@ export function ReceiptReviewClient({ receipt: initialReceipt }: { receipt: Rece
             className="btn btn-primary"
           >
             <Users className="h-4 w-4" />
-            Proceed to Split
+            {receipt.status === 'SETTLED' ? 'Edit Split' : 'Proceed to Split'}
           </Link>
+          {(receipt.status === 'SETTLED' || receipt.status === 'SPLITTING') && (
+            <Link
+              href={`/groups/${receipt.group.id}/receipts/${receipt.id}/settle`}
+              className="btn btn-primary"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {receipt.status === 'SETTLED' ? 'View Settlement' : 'Settle'}
+            </Link>
+          )}
         </div>
       </div>
     </>

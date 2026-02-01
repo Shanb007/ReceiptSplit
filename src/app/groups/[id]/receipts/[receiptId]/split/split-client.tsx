@@ -459,7 +459,7 @@ export function SplitClient({
 
       setSaveSuccess(true)
       setTimeout(() => {
-        router.push(`/groups/${receipt.group.id}/receipts/${receipt.id}`)
+        router.push(`/groups/${receipt.group.id}/receipts/${receipt.id}/settle`)
       }, 800)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
