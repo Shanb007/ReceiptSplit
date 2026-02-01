@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 const updateMemberSchema = z.object({
   name: z.string().min(1).max(50).optional(),
+  splitwiseUserId: z.string().nullable().optional(),
 })
 
 export async function PUT(
