@@ -140,9 +140,6 @@ Do **not** set `NEXT_PUBLIC_MODE` (or set it to anything other than `"local"`).
 
 > **Google OAuth:** In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an OAuth 2.0 client. Add your domain as an authorized JavaScript origin and `<domain>/api/auth/callback/google` as an authorized redirect URI.
 
-### Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FShanb007%2FReceiptSplit&env=DATABASE_URL,DIRECT_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,OPENAI_API_KEY,CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,ENCRYPTION_KEY,SPLITWISE_CLIENT_ID,SPLITWISE_CLIENT_SECRET,SPLITWISE_REDIRECT_URI&envDescription=See%20.env.example%20for%20descriptions&project-name=receiptsplit)
 
 After deploying, run `npx prisma db push` against your production database.
 
